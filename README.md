@@ -46,15 +46,6 @@ macOS 14 이상, Apple 실리콘과 Intel Mac을 모두 지원합니다.
 
 네트워크에 연결하지 않으며 어떤 데이터도 수집하지 않습니다.
 
-## 소스에서 빌드
-
-Xcode Command Line Tools가 필요합니다.
-
-```sh
-scripts/test.sh        # 순서 로직 검사 실행
-scripts/build-app.sh   # build/Chojema OptSwitch.app과 릴리스용 zip 생성
-```
-
 ## 라이선스
 
 [MIT](LICENSE)

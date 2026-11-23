@@ -46,15 +46,6 @@ store, or send any keystrokes.
 
 The app makes no network connections and collects no data.
 
-## Build from source
-
-Requires the Xcode Command Line Tools.
-
-```sh
-scripts/test.sh        # run the ordering checks
-scripts/build-app.sh   # build/Chojema OptSwitch.app and a release zip
-```
-
 ## License
 
 [MIT](LICENSE)
