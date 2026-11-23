@@ -1,5 +1,17 @@
 # 변경 내역
 
+## [0.2.0] - 2026-11-23
+
+### 추가
+- 앱 메뉴를 한국어로 표시하며, 메뉴 막대 아이콘의 언어 메뉴에서 English로 바꿀 수 있습니다.
+
+설치 방법은 [README](https://github.com/chojema/OptSwitch#설치)를 참고하세요.
+
+### English
+- The app menu is shown in Korean by default; choose English from the Language menu in the menu bar icon.
+
+See the [English README](https://github.com/chojema/OptSwitch/blob/main/README.en.md#install) for installation.
+
 ## [0.1.0] - 2026-11-23
 
 ### 추가

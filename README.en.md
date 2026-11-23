@@ -17,6 +17,11 @@ running apps, then release Option to switch, much like Alt+Tab on Windows.
 
 Apps are listed in most recently used order.
 
+## Language
+
+The app menu is shown in Korean by default. Choose **English** from the
+**언어 (Language)** menu in the menu bar icon to switch to English.
+
 ## Requirements
 
 macOS 14 or later, on Apple silicon or Intel.
