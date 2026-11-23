@@ -12,7 +12,8 @@ FLAGS=(-c release --arch arm64 --arch x86_64 -Xswiftc -file-prefix-map -Xswiftc 
 swift build "${FLAGS[@]}"
 
 rm -rf build
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 cp "$(swift build "${FLAGS[@]}" --show-bin-path)/OptSwitch" "$APP/Contents/MacOS/OptSwitch"
 strip -S -x "$APP/Contents/MacOS/OptSwitch"  # also drops object-file paths kept for debugging
 sed -e "s/__VERSION__/$VERSION/" -e "s/__BUILD__/$BUILD/" Resources/Info.plist > "$APP/Contents/Info.plist"

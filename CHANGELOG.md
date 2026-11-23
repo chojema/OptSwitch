@@ -1,5 +1,17 @@
 # 변경 내역
 
+## [0.3.1] - 2026-11-23
+
+### 변경
+- 앱 아이콘을 추가했습니다.
+
+설치 방법은 [README](https://github.com/chojema/OptSwitch#설치)를 참고하세요.
+
+### English
+- Added an app icon.
+
+See the [English README](https://github.com/chojema/OptSwitch/blob/main/README.en.md#install) for installation.
+
 ## [0.3.0] - 2026-11-23
 
 ### 변경

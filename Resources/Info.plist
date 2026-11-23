@@ -8,6 +8,8 @@
     <string>Chojema OptSwitch</string>
     <key>CFBundleExecutable</key>
     <string>OptSwitch</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>io.github.chojema.optswitch</string>
     <key>CFBundleInfoDictionaryVersion</key>
