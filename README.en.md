@@ -55,12 +55,6 @@ scripts/test.sh        # run the ordering checks
 scripts/build-app.sh   # build/Chojema OptSwitch.app and a release zip
 ```
 
-## Versioning
-
-Versions follow [Semantic Versioning](https://semver.org). The version lives
-in `VERSION`; the build number is the commit count. Pushing a tag `vX.Y.Z`
-that matches `VERSION` builds and publishes a GitHub release.
-
 ## License
 
 [MIT](LICENSE)

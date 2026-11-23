@@ -55,12 +55,6 @@ scripts/test.sh        # 순서 로직 검사 실행
 scripts/build-app.sh   # build/Chojema OptSwitch.app과 릴리스용 zip 생성
 ```
 
-## 버전 관리
-
-버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다. 버전 번호는
-`VERSION` 파일에 있고, 빌드 번호는 커밋 수입니다. `VERSION`과 일치하는
-`vX.Y.Z` 태그를 푸시하면 GitHub 릴리스가 빌드되어 게시됩니다.
-
 ## 라이선스
 
 [MIT](LICENSE)
