@@ -1,3 +1,5 @@
+<img src="docs/icon.png" width="128" height="128" alt="Chojema OptSwitch icon">
+
 # Chojema OptSwitch
 
 A small macOS window switcher. Hold **Option** and press **Tab** to cycle

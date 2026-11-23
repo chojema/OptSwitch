@@ -1,3 +1,5 @@
+<img src="docs/icon.png" width="128" height="128" alt="Chojema OptSwitch 아이콘">
+
 # Chojema OptSwitch
 
 macOS용 창 전환기입니다. **Option** 키를 누른 채 **Tab**을 누르면 열린 문서(창)
