@@ -15,4 +15,9 @@ check(wrap(-1, 3) == 2, "wrap backward")
 check(wrap(-4, 3) == 2, "wrap far backward")
 check(wrap(0, 1) == 0, "single item")
 
+let order = switchOrder(windows: [(2, 20), (1, 10), (2, 21), (9, 90)], running: [1, 2, 3, 4], history: [4, 1])
+check(order.map(\.pid) == [2, 1, 2, 4, 3], "windows front to back, then windowless apps by recent use")
+check(order.map(\.window) == [20, 10, 21, nil, nil], "window ids kept, nil for windowless apps")
+check(switchOrder(windows: [], running: [1], history: []).map(\.window) == [nil], "no windows falls back to apps")
+
 print("OK: all order tests passed")

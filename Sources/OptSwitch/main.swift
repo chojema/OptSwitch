@@ -4,14 +4,15 @@ import ServiceManagement
 private let languageKey = "language"
 
 /// Korean unless the user picked English from the menu.
-private func text(_ korean: String, _ english: String) -> String {
+func text(_ korean: String, _ english: String) -> String {
     UserDefaults.standard.string(forKey: languageKey) == "en" ? english : korean
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let switcher = Switcher()
     private var statusItem: NSStatusItem!
-    private let permissionItem = NSMenuItem(title: "", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+    private let permissionItem = NSMenuItem(title: "", action: #selector(showGuide), keyEquivalent: "")
+    private var guide: PermissionGuide?
     private let loginItem = NSMenuItem(title: "", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
     private let languageItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let koreanItem = NSMenuItem(title: "한국어", action: #selector(chooseLanguage), keyEquivalent: "")
@@ -42,18 +43,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(quitItem)
         statusItem.menu = menu
 
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        if AXIsProcessTrustedWithOptions(options), switcher.start() { return }
-        // Permission is granted in System Settings while we run; keep trying until the tap installs.
-        Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] timer in
-            guard let self, AXIsProcessTrusted(), self.switcher.start() else { return }
+        if !switcher.start() {
+            let alert = NSAlert()
+            alert.messageText = text("Option+Tab을 쓸 수 없습니다.", "Option+Tab is not available.")
+            alert.informativeText = text("다른 앱이 이미 Option+Tab을 쓰고 있습니다. 그 앱을 종료한 뒤 Chojema OptSwitch를 다시 여세요.",
+                                         "Another app is already using Option+Tab. Quit that app, then open Chojema OptSwitch again.")
+            NSApp.activate()
+            alert.runModal()
+        }
+        if AXIsProcessTrusted() { return }
+        showGuide()
+        // Permission is granted in System Settings while we run; close the guide as soon as it is.
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+            guard AXIsProcessTrusted() else { return }
             timer.invalidate()
+            self?.guide?.close()
+            self?.guide = nil
         }
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        permissionItem.title = text("손쉬운 사용 권한 허용…", "Grant Accessibility Permission…")
-        permissionItem.isHidden = switcher.isRunning
+        permissionItem.title = text("문서별 전환 권한 안내…", "Per-Window Switching Permission…")
+        permissionItem.isHidden = AXIsProcessTrusted()
         loginItem.title = text("로그인 시 실행", "Launch at Login")
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         languageItem.title = text("언어", "Language")
@@ -67,8 +78,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         UserDefaults.standard.set(sender.representedObject as? String, forKey: languageKey)
     }
 
-    @objc private func openAccessibilitySettings() {
-        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+    @objc private func showGuide() {
+        guide?.close()
+        guide = PermissionGuide()  // rebuilt each time so it follows the chosen language
+        guide?.present()
     }
 
     @objc private func toggleLaunchAtLogin() {

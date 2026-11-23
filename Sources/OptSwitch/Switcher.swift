@@ -1,19 +1,18 @@
 import AppKit
+import Carbon.HIToolbox
 
-private let keyTab: Int64 = 48
-private let keyEscape: Int64 = 53
-private let keyLeft: Int64 = 123
-private let keyRight: Int64 = 124
+private enum Key: UInt32 { case next = 1, previous, left, right }
 
-/// Watches the keyboard for Option+Tab, cycles through apps, and activates the choice when Option is released.
+/// Cycles through windows on Option+Tab, like Alt+Tab on Windows, and brings the choice to the front when
+/// Option is released. Keys come from system hot keys and the modifier state; only raising a specific window needs
+/// Accessibility permission, and without it the switcher works per app.
 final class Switcher {
     private var history: [pid_t] = []  // most recent first
-    private var apps: [NSRunningApplication] = []
+    private var items: [SwitchItem] = []
     private var index = 0
-    private var tap: CFMachPort?
+    private var panelKeys: [EventHotKeyRef] = []
+    private var poll: Timer?
     private let panel = SwitcherPanel()
-
-    var isRunning: Bool { tap != nil }
 
     init() {
         if let front = NSWorkspace.shared.frontmostApplication { history = [front.processIdentifier] }
@@ -29,51 +28,31 @@ final class Switcher {
         }
     }
 
-    /// Installs the keyboard tap. Fails until the user grants Accessibility permission; the caller retries.
+    /// Registers Option+Tab and Option+Shift+Tab. Fails when another app already owns them.
     func start() -> Bool {
-        if tap != nil { return true }
-        let mask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
-        guard let tap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
-            eventsOfInterest: CGEventMask(mask),
-            callback: { _, type, event, info in
-                Unmanaged<Switcher>.fromOpaque(info!).takeUnretainedValue().handle(type, event)
-            },
-            userInfo: Unmanaged.passUnretained(self).toOpaque()
-        ) else { return false }
-        self.tap = tap
-        CFRunLoopAddSource(CFRunLoopGetMain(), CFMachPortCreateRunLoopSource(nil, tap, 0), .commonModes)
-        return true
+        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        InstallEventHandler(GetApplicationEventTarget(), { _, event, info in
+            var id = EventHotKeyID()
+            GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
+                              nil, MemoryLayout<EventHotKeyID>.size, nil, &id)
+            Unmanaged<Switcher>.fromOpaque(info!).takeUnretainedValue().pressed(Key(rawValue: id.id))
+            return noErr
+        }, 1, &spec, Unmanaged.passUnretained(self).toOpaque(), nil)
+        return register(kVK_Tab, optionKey, .next) != nil && register(kVK_Tab, optionKey | shiftKey, .previous) != nil
     }
 
-    // Returning nil swallows the event so the frontmost app never sees Option+Tab.
-    private func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
-        let pass = Unmanaged.passUnretained(event)
-        switch type {
-        case .tapDisabledByTimeout, .tapDisabledByUserInput:
-            if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
-            return pass
-        case .flagsChanged:
-            if panel.isVisible && !event.flags.contains(.maskAlternate) { commit() }
-            return pass
-        case .keyDown, .keyUp:
-            let key = event.getIntegerValueField(.keyboardEventKeycode)
-            let flags = event.flags
-            let down = type == .keyDown
-            if key == keyTab && flags.contains(.maskAlternate) && flags.isDisjoint(with: [.maskCommand, .maskControl]) {
-                if down { step(flags.contains(.maskShift) ? -1 : 1) }
-                return nil
-            }
-            guard panel.isVisible else { return pass }
-            switch key {
-            case keyEscape: if down { panel.orderOut(nil) }
-            case keyLeft: if down { step(-1) }
-            case keyRight: if down { step(1) }
-            default: return pass
-            }
-            return nil
-        default:
-            return pass
+    private func register(_ key: Int, _ modifiers: Int, _ id: Key) -> EventHotKeyRef? {
+        var ref: EventHotKeyRef?
+        let status = RegisterEventHotKey(UInt32(key), UInt32(modifiers), EventHotKeyID(signature: 0x4F50_5357, id: id.rawValue),
+                                         GetApplicationEventTarget(), 0, &ref)
+        return status == noErr ? ref : nil
+    }
+
+    private func pressed(_ key: Key?) {
+        switch key {
+        case .next, .right: step(1)
+        case .previous, .left: step(-1)
+        case nil: break
         }
     }
 
@@ -81,24 +60,58 @@ final class Switcher {
         if !panel.isVisible {
             let candidates = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular && $0 != .current }
             let byPid = Dictionary(candidates.map { ($0.processIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
-            apps = mruOrder(running: candidates.map(\.processIdentifier), history: history).compactMap { byPid[$0] }
-            guard !apps.isEmpty else { return }
+            // Without Accessibility a specific window cannot be raised, so keep one entry (the front window) per app.
+            var windows = visibleWindows()
+            var titles: [CGWindowID: String] = [:]
+            if AXIsProcessTrusted() {
+                titles = windowTitles(of: Set(windows.map(\.pid)))
+            } else {
+                var seen = Set<pid_t>()
+                windows = windows.filter { seen.insert($0.pid).inserted }
+            }
+            items = switchOrder(windows: windows.map { ($0.pid, $0.window) }, running: candidates.map(\.processIdentifier), history: history)
+                .compactMap { entry in
+                    guard let app = byPid[entry.pid] else { return nil }
+                    let name = app.localizedName ?? ""
+                    let title = entry.window.flatMap { titles[$0] }.map { "\($0) — \(name)" } ?? name
+                    return SwitchItem(app: app, window: entry.window, title: title)
+                }
+            guard !items.isEmpty else { return }
             index = 0
-            panel.show(apps)
+            panel.show(items)
+            // Arrows belong to the switcher only while it is open (Option is still held). No Escape:
+            // Option+Escape is the system Speak Selection shortcut and reaches it even when registered here.
+            panelKeys = [(kVK_LeftArrow, Key.left), (kVK_RightArrow, .right)]
+                .compactMap { register($0.0, optionKey, $0.1) }
+            // Hot keys only report presses, so watch the modifier state to notice Option being released.
+            let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
+                if !CGEventSource.flagsState(.combinedSessionState).contains(.maskAlternate) { self?.commit() }
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            poll = timer
         }
-        index = wrap(index + delta, apps.count)
+        index = wrap(index + delta, items.count)
         panel.select(index)
     }
 
-    private func commit() {
+    private func close() {
         panel.orderOut(nil)
-        let app = apps[index]
-        if app.isHidden { app.unhide() }
-        app.activate()
+        poll?.invalidate()
+        poll = nil
+        panelKeys.forEach { UnregisterEventHotKey($0) }
+        panelKeys = []
+    }
+
+    private func commit() {
+        close()
+        let item = items[index]
+        if let window = item.window, focus(window: window, of: item.app.processIdentifier) { return }
+        if item.app.isHidden { item.app.unhide() }
+        item.app.activate()
     }
 }
 
-/// The floating row of app icons shown while Option is held.
+/// The floating row of icons shown while Option is held.
 final class SwitcherPanel: NSPanel {
     private let row = NSStackView()
     private let nameLabel = NSTextField(labelWithString: "")
@@ -141,15 +154,15 @@ final class SwitcherPanel: NSPanel {
         contentView = background
     }
 
-    func show(_ apps: [NSRunningApplication]) {
+    func show(_ items: [SwitchItem]) {
         let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main!
         // Shrink icons so a long app list still fits on screen.
-        let iconSize = max(24, min(64, (screen.visibleFrame.width * 0.9 - 28) / CGFloat(apps.count) - 22))
+        let iconSize = max(24, min(64, (screen.visibleFrame.width * 0.9 - 28) / CGFloat(items.count) - 22))
 
         tiles.forEach { $0.removeFromSuperview() }
-        tiles = apps.map { tile(for: $0, size: iconSize) }
+        tiles = items.map { tile(for: $0.app, size: iconSize) }
         tiles.forEach(row.addArrangedSubview)
-        names = apps.map { $0.localizedName ?? "" }
+        names = items.map(\.title)
 
         setContentSize(contentView!.fittingSize)
         let area = screen.visibleFrame
