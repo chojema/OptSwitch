@@ -1,82 +1,66 @@
 # Chojema OptSwitch
 
-A small macOS app switcher. Hold **Option** and press **Tab** to cycle through
-running apps, then release Option to switch, much like Alt+Tab on Windows.
+macOS용 앱 전환기입니다. **Option** 키를 누른 채 **Tab**을 누르면 실행 중인 앱
+사이를 이동하고, Option 키를 떼면 선택한 앱으로 전환합니다. Windows의 Alt+Tab과
+같은 방식입니다.
 
-[한국어 안내](#한국어)
+[English](README.en.md)
 
-## Keys
+## 단축키
 
-| Keys | Action |
+| 키 | 동작 |
 |---|---|
-| Option+Tab | Open the switcher, move to the next app |
-| Option+Shift+Tab | Move to the previous app |
-| Left / Right arrow (while open) | Move backward or forward |
-| Escape (while open) | Cancel |
-| Release Option | Switch to the selected app |
+| Option+Tab | 전환기를 열고 다음 앱으로 이동 |
+| Option+Shift+Tab | 이전 앱으로 이동 |
+| 왼쪽, 오른쪽 화살표(전환기가 열린 동안) | 앞뒤로 이동 |
+| Escape(전환기가 열린 동안) | 취소 |
+| Option 키 떼기 | 선택한 앱으로 전환 |
 
-Apps are listed in most recently used order.
+앱은 최근에 사용한 순서로 표시됩니다.
 
-## Requirements
+## 요구 사항
 
-macOS 14 or later, on Apple silicon or Intel.
+macOS 14 이상, Apple 실리콘과 Intel Mac을 모두 지원합니다.
 
-## Install
+## 설치
 
-1. Download `Chojema-OptSwitch-<version>.zip` from
-   [Releases](../../releases) and unzip it.
-2. Move `Chojema OptSwitch.app` to `/Applications`.
-3. Open it. The app is not notarized, so macOS blocks the first launch.
-   Go to **System Settings > Privacy & Security** and choose **Open Anyway**.
-4. Grant **Accessibility** permission when asked
-   (**System Settings > Privacy & Security > Accessibility**).
-   The switcher starts working within a few seconds.
+1. [Releases](../../releases)에서 `Chojema-OptSwitch-<버전>.zip`을 내려받아
+   압축을 풉니다.
+2. `Chojema OptSwitch.app`을 `/Applications`(응용 프로그램) 폴더로 옮깁니다.
+3. 앱을 엽니다. 공증되지 않은 앱이므로 처음 실행할 때 macOS가 차단합니다.
+   **시스템 설정 > 개인정보 보호 및 보안**에서 **그래도 열기**를 선택합니다.
+4. 요청이 나타나면 **손쉬운 사용** 권한을 허용합니다
+   (**시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용**).
+   허용하고 몇 초 안에 전환기가 동작합니다.
 
-After updating to a new version, macOS may ask for Accessibility permission
-again. If the switcher stops responding, remove the app from the
-Accessibility list and add it back.
+새 버전으로 업데이트한 뒤 macOS가 손쉬운 사용 권한을 다시 요청할 수 있습니다.
+전환기가 반응하지 않으면 손쉬운 사용 목록에서 앱을 제거한 뒤 다시 추가합니다.
 
-## Why Accessibility permission?
+## 손쉬운 사용 권한이 필요한 이유
 
-The app needs to see keyboard events so it can catch Option+Tab before the
-frontmost app does and notice when Option is released. It does not record,
-store, or send any keystrokes.
+앞에 있는 앱보다 먼저 Option+Tab을 받아 처리하고, Option 키를 뗀 순간을
+알아차리려면 키보드 이벤트를 볼 수 있어야 합니다. 키 입력을 기록하거나 저장하거나
+전송하지 않습니다.
 
-## Privacy
+## 개인정보
 
-The app makes no network connections and collects no data.
+네트워크에 연결하지 않으며 어떤 데이터도 수집하지 않습니다.
 
-## Build from source
+## 소스에서 빌드
 
-Requires the Xcode Command Line Tools.
+Xcode Command Line Tools가 필요합니다.
 
 ```sh
-scripts/test.sh        # run the ordering checks
-scripts/build-app.sh   # build/Chojema OptSwitch.app and a release zip
+scripts/test.sh        # 순서 로직 검사 실행
+scripts/build-app.sh   # build/Chojema OptSwitch.app과 릴리스용 zip 생성
 ```
 
-## Versioning
+## 버전 관리
 
-Versions follow [Semantic Versioning](https://semver.org). The version lives
-in `VERSION`; the build number is the commit count. Pushing a tag `vX.Y.Z`
-that matches `VERSION` builds and publishes a GitHub release.
+버전은 [유의적 버전](https://semver.org/lang/ko/)을 따릅니다. 버전 번호는
+`VERSION` 파일에 있고, 빌드 번호는 커밋 수입니다. `VERSION`과 일치하는
+`vX.Y.Z` 태그를 푸시하면 GitHub 릴리스가 빌드되어 게시됩니다.
 
-## License
+## 라이선스
 
 [MIT](LICENSE)
-
----
-
-## 한국어
-
-Option 키를 누른 채 Tab을 누르면 실행 중인 앱 사이를 이동하고, Option 키를
-떼면 선택한 앱으로 전환합니다. Windows의 Alt+Tab과 같은 방식입니다.
-
-- Option+Shift+Tab 또는 왼쪽, 오른쪽 화살표로 이동하고 Escape로 취소합니다.
-- macOS 14 이상에서 동작합니다.
-- 공증되지 않은 앱이므로 처음 실행할 때 **시스템 설정 > 개인정보 보호 및 보안**에서
-  **그래도 열기**를 선택합니다.
-- 키 입력을 감지하기 위해 **손쉬운 사용** 권한이 필요합니다. 키 입력을 기록하거나
-  저장하거나 전송하지 않으며, 네트워크 연결도 하지 않습니다.
-- 새 버전으로 업데이트한 뒤 동작하지 않으면 손쉬운 사용 목록에서 앱을 제거한 뒤
-  다시 추가합니다.
